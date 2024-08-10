@@ -130,7 +130,7 @@
        :default (is (Double/isNaN e)))))
 
 (deftest t-parsing-reader-prefixed-data
-  (doseq [[s t ws sexpr]
+  (doseq [[s t ws sexpr last-tag last-sexpr]
           [["@sym"        :deref            []              '(deref sym)]
            ["@  sym"      :deref            [:whitespace]   '(deref sym)]
            ["'sym"        :quote            []              '(quote sym)]
@@ -139,6 +139,8 @@
            ["`  sym"      :syntax-quote     [:whitespace]   '(quote sym)]
            ["~sym"        :unquote          []              '(unquote sym)]
            ["~  sym"      :unquote          [:whitespace]   '(unquote sym)]
+           ["~ @sym"      :unquote          [:whitespace]   '(unquote (deref sym)) :deref '(deref sym)]
+           ["~,@sym"      :unquote          [:comma]        '(unquote (deref sym)) :deref '(deref sym)]
            ["~@sym"       :unquote-splicing []              '(unquote-splicing sym)]
            ["~@  sym"     :unquote-splicing [:whitespace]   '(unquote-splicing sym)]
            ["#=sym"       :eval             []              '(eval 'sym)]
@@ -149,9 +151,9 @@
           children (node/children n)
           c (map node/tag children)]
       (is (= t (node/tag n)))
-      (is (= :token (last c)))
+      (is (= (or last-tag :token) (last c)))
       (is (= sexpr (node/sexpr n)))
-      (is (= 'sym (node/sexpr (last children))))
+      (is (= (or last-sexpr 'sym) (node/sexpr (last children))))
       (is (= ws (vec (butlast c)))))))
 
 (deftest t-eval
